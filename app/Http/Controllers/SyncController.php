@@ -29,6 +29,7 @@ class SyncController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Illuminate\Support\Facades\Log::warning('[Sync API Push Validation Failed]', ['errors' => $validator->errors()]);
             return response()->json([
                 'success' => false,
                 'message' => 'Please provide a valid device_id and changes payload.',
@@ -42,11 +43,25 @@ class SyncController extends Controller
             $deviceId = $request->input('device_id');
             $changes  = $request->input('changes', []);
 
+            \Illuminate\Support\Facades\Log::info('[Sync API Push Request Received]', [
+                'tenant_id' => $tenantId,
+                'device_id' => $deviceId,
+                'tables'    => array_keys($changes),
+            ]);
+
             $result = $this->syncService->processPush($tenantId, $deviceId, $changes);
+
+            \Illuminate\Support\Facades\Log::info('[Sync API Push Success Result]', [
+                'tenant_id' => $tenantId,
+                'result'    => $result,
+            ]);
 
             return response()->json($result, 200);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('[Sync Push Controller Exception] ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('[Sync Push Controller Exception]', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Server sync processing error: ' . $e->getMessage(),
@@ -66,11 +81,20 @@ class SyncController extends Controller
             $deviceId = $request->input('device_id', 'Terminal_Unknown');
             $since = $request->input('since'); // ISO date string or timestamp
 
+            \Illuminate\Support\Facades\Log::info('[Sync API Pull Request Received]', [
+                'tenant_id' => $tenantId,
+                'device_id' => $deviceId,
+                'since'     => $since,
+            ]);
+
             $result = $this->syncService->processPull($tenantId, $deviceId, $since);
 
             return response()->json($result, 200);
         } catch (\Throwable $e) {
-            \Illuminate\Support\Facades\Log::error('[Sync Pull Controller Exception] ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('[Sync Pull Controller Exception]', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Server sync pull error: ' . $e->getMessage(),

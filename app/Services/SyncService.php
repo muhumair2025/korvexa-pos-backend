@@ -114,7 +114,12 @@ class SyncService
                     });
                 } catch (\Throwable $e) {
                     $conflictsResolved++;
-                    \Illuminate\Support\Facades\Log::warning("[Sync Push Item Handled Warning] Table {$tableName}: " . $e->getMessage());
+                    \Illuminate\Support\Facades\Log::error("[Sync Push Item Error] Table {$tableName}", [
+                        'message' => $e->getMessage(),
+                        'item'    => $item,
+                        'file'    => $e->getFile(),
+                        'line'    => $e->getLine(),
+                    ]);
                 }
             }
         }
