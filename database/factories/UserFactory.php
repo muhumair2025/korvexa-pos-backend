@@ -24,12 +24,18 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        $hasFake = function_exists('fake');
+
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'email_verified_at' => now(),
+            'uuid' => (string) Str::uuid(),
+            'tenant_id' => 1,
+            'username' => $hasFake ? fake()->unique()->userName() : 'user_' . Str::random(5),
+            'full_name' => $hasFake ? fake()->name() : 'User ' . Str::random(5),
             'password' => static::$password ??= Hash::make('password'),
-            'remember_token' => Str::random(10),
+            'role' => 'Cashier',
+            'permissions' => ['register', 'orders', 'customers'],
+            'shift_schedule' => 'Flexible / Full Day',
+            'max_cash_limit' => 1000.00,
         ];
     }
 
