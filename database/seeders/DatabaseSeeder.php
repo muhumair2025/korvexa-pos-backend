@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\SuperAdmin;
 use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -18,6 +19,16 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // ── Web Admin Dashboard SuperAdmin Account ─────────────────────
+        SuperAdmin::firstOrCreate(
+            ['email' => 'admin@apexpos.com'],
+            [
+                'name'     => 'Platform SuperAdmin',
+                'password' => Hash::make('admin123456'),
+            ]
+        );
+
+        // ── Default Store Tenant & Cashier/Admin Account ──────────────
         $tenant = Tenant::firstOrCreate(
             ['id' => 1],
             [
