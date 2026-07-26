@@ -36,14 +36,22 @@ class SyncController extends Controller
             ], 422);
         }
 
-        $user = $request->user();
-        $tenantId = $request->input('_tenant_id') ?? ($user instanceof \App\Models\Tenant ? $user->id : ($user->tenant_id ?? null));
-        $deviceId = $request->input('device_id');
-        $changes  = $request->input('changes', []);
+        try {
+            $user = $request->user();
+            $tenantId = $request->input('_tenant_id') ?? ($user instanceof \App\Models\Tenant ? $user->id : ($user->tenant_id ?? null));
+            $deviceId = $request->input('device_id');
+            $changes  = $request->input('changes', []);
 
-        $result = $this->syncService->processPush($tenantId, $deviceId, $changes);
+            $result = $this->syncService->processPush($tenantId, $deviceId, $changes);
 
-        return response()->json($result, 200);
+            return response()->json($result, 200);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[Sync Push Controller Exception] ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server sync processing error: ' . $e->getMessage(),
+            ], 200);
+        }
     }
 
     /**
@@ -52,14 +60,22 @@ class SyncController extends Controller
      */
     public function pull(Request $request): JsonResponse
     {
-        $user = $request->user();
-        $tenantId = $request->input('_tenant_id') ?? ($user instanceof \App\Models\Tenant ? $user->id : ($user->tenant_id ?? null));
-        $deviceId = $request->input('device_id', 'Terminal_Unknown');
-        $since = $request->input('since'); // ISO date string or timestamp
+        try {
+            $user = $request->user();
+            $tenantId = $request->input('_tenant_id') ?? ($user instanceof \App\Models\Tenant ? $user->id : ($user->tenant_id ?? null));
+            $deviceId = $request->input('device_id', 'Terminal_Unknown');
+            $since = $request->input('since'); // ISO date string or timestamp
 
-        $result = $this->syncService->processPull($tenantId, $deviceId, $since);
+            $result = $this->syncService->processPull($tenantId, $deviceId, $since);
 
-        return response()->json($result, 200);
+            return response()->json($result, 200);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('[Sync Pull Controller Exception] ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server sync pull error: ' . $e->getMessage(),
+            ], 200);
+        }
     }
 
     /**

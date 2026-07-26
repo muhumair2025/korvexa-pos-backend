@@ -43,21 +43,21 @@ class SyncService
         $conflictsResolved = 0;
         $syncedTables = [];
 
-        DB::transaction(function () use ($tenantId, $changes, &$recordsPushed, &$conflictsResolved, &$syncedTables) {
-            foreach ($this->modelMap as $tableName => $modelClass) {
-                if (!isset($changes[$tableName]) || !is_array($changes[$tableName])) {
-                    continue;
-                }
+        foreach ($this->modelMap as $tableName => $modelClass) {
+            if (!isset($changes[$tableName]) || !is_array($changes[$tableName])) {
+                continue;
+            }
 
-                $items = $changes[$tableName];
-                if (empty($items)) {
-                    continue;
-                }
+            $items = $changes[$tableName];
+            if (empty($items)) {
+                continue;
+            }
 
-                $syncedTables[] = $tableName;
+            $syncedTables[] = $tableName;
 
-                foreach ($items as $item) {
-                    try {
+            foreach ($items as $item) {
+                try {
+                    DB::transaction(function () use ($tableName, $modelClass, $item, $tenantId, &$recordsPushed, &$conflictsResolved) {
                         if (!isset($item['uuid']) || empty($item['uuid'])) {
                             $item['uuid'] = (string) Str::uuid();
                         }
@@ -111,13 +111,13 @@ class SyncService
                             $modelClass::create($insertData);
                             $recordsPushed++;
                         }
-                    } catch (\Throwable $e) {
-                        $conflictsResolved++;
-                        \Illuminate\Support\Facades\Log::warning("[Sync Push Item Handled Warning] Table {$tableName}: " . $e->getMessage());
-                    }
+                    });
+                } catch (\Throwable $e) {
+                    $conflictsResolved++;
+                    \Illuminate\Support\Facades\Log::warning("[Sync Push Item Handled Warning] Table {$tableName}: " . $e->getMessage());
                 }
             }
-        });
+        }
 
         // Record sync log
         SyncLog::create([
