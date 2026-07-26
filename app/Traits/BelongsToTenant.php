@@ -38,6 +38,8 @@ trait BelongsToTenant
         });
     }
 
+    private static bool $isResolving = false;
+
     /**
      * Resolve the current tenant ID from the authenticated user or request context.
      */
@@ -48,21 +50,35 @@ trait BelongsToTenant
             return (int) request()->input('_tenant_id');
         }
 
-        // Priority 2: Check Sanctum API guard user directly
-        try {
-            if (auth('sanctum')->check() && auth('sanctum')->user() && auth('sanctum')->user()->tenant_id) {
-                return (int) auth('sanctum')->user()->tenant_id;
-            }
-        } catch (\Throwable $e) {}
-
-        // Priority 3: Check current request user
-        if (request() && request()->user() && request()->user()->tenant_id) {
-            return (int) request()->user()->tenant_id;
+        // Prevent infinite recursion if auth('sanctum')->user() queries a model that uses BelongsToTenant
+        if (static::$isResolving) {
+            return null;
         }
 
-        // Priority 4: Check default auth guard
-        if (auth()->check() && auth()->user() && auth()->user()->tenant_id) {
-            return (int) auth()->user()->tenant_id;
+        static::$isResolving = true;
+
+        try {
+            // Priority 2: Check Sanctum API guard user directly
+            if (auth('sanctum')->check()) {
+                $user = auth('sanctum')->user();
+                if ($user && !empty($user->tenant_id)) {
+                    return (int) $user->tenant_id;
+                }
+            }
+
+            // Priority 3: Check current request user
+            if (request() && request()->user() && !empty(request()->user()->tenant_id)) {
+                return (int) request()->user()->tenant_id;
+            }
+
+            // Priority 4: Check default auth guard
+            if (auth()->check() && auth()->user() && !empty(auth()->user()->tenant_id)) {
+                return (int) auth()->user()->tenant_id;
+            }
+        } catch (\Throwable $e) {
+            // ignore
+        } finally {
+            static::$isResolving = false;
         }
 
         return null;
