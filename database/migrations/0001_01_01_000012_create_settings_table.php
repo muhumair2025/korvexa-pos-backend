@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->foreignId('tenant_id')->constrained('tenants')->cascadeOnDelete();
             $table->string('key');
-            $table->text('value');
+            $table->longText('value');
             $table->timestamp('synced_at')->nullable();
             $table->timestamps();
 
